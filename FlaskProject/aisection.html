@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Form Analysis — MoGym</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0c0f;
+      --bg2:       #111418;
+      --bg3:       #181c22;
+      --border:    rgba(255,255,255,0.07);
+      --accent:    #00e5a0;
+      --accent2:   #00b87a;
+      --warn:      #ff6b35;
+      --text:      #e8eaed;
+      --muted:     #6b7280;
+      --card:      #13171d;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 400;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 40px;
+      background: rgba(10,12,15,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .nav-back {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-back:hover { color: var(--text); }
+    .nav-back svg { width: 16px; height: 16px; }
+
+    .hero {
+      position: relative;
+      padding: 140px 40px 60px;
+      max-width: 900px;
+      margin: 0 auto;
+      z-index: 1;
+    }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0,229,160,0.08);
+      border: 1px solid rgba(0,229,160,0.2);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 100px;
+      margin-bottom: 24px;
+    }
+
+    .hero-tag span {
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    .hero h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(48px, 7vw, 80px);
+      font-weight: 800;
+      line-height: 0.95;
+      text-transform: uppercase;
+      letter-spacing: -1px;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: var(--accent);
+    }
+
+    .hero p {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 480px;
+      line-height: 1.7;
+    }
+
+    .main {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 40px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .upload-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .card-header-icon {
+      width: 36px; height: 36px;
+      background: rgba(0,229,160,0.1);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-header-icon svg { width: 18px; height: 18px; color: var(--accent); }
+
+    .card-header h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .card-header p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    .card-body { padding: 28px; }
+
+    .exercise-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .exercise-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 12px 10px;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .exercise-btn:hover { border-color: rgba(0,229,160,0.3); color: var(--text); }
+
+    .exercise-btn.active {
+      background: rgba(0,229,160,0.1);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 14px;
+      padding: 48px 28px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      background: var(--bg3);
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(0,229,160,0.04);
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-icon {
+      width: 56px; height: 56px;
+      margin: 0 auto 16px;
+      background: rgba(0,229,160,0.08);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .drop-icon svg { width: 26px; height: 26px; color: var(--accent); }
+    .drop-zone h3 { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+    .drop-zone p { font-size: 13px; color: var(--muted); }
+
+    .drop-zone .file-types {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .file-type-tag {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 100px;
+    }
+
+    .file-selected {
+      display: none;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background: rgba(0,229,160,0.06);
+      border: 1px solid rgba(0,229,160,0.2);
+      border-radius: 12px;
+      margin-top: 16px;
+    }
+
+    .file-selected.show { display: flex; }
+
+    .file-icon {
+      width: 40px; height: 40px;
+      background: rgba(0,229,160,0.1);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .file-icon svg { width: 20px; height: 20px; color: var(--accent); }
+    .file-info { flex: 1; min-width: 0; }
+
+    .file-name {
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-size { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .remove-file {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      transition: color 0.15s;
+    }
+
+    .remove-file:hover { color: var(--warn); }
+    .remove-file svg { width: 16px; height: 16px; }
+
+    .analyze-btn {
+      width: 100%;
+      margin-top: 20px;
+      padding: 16px;
+      background: var(--accent);
+      color: #0a0c0f;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .analyze-btn:hover:not(:disabled) {
+      background: #00ffb3;
+      transform: translateY(-1px);
+    }
+
+    .analyze-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+    .analyze-btn svg { width: 20px; height: 20px; }
+
+    .loading-card {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px 28px;
+      text-align: center;
+    }
+
+    .loading-card.show { display: block; }
+
+    .loading-spinner {
+      width: 52px; height: 52px;
+      margin: 0 auto 20px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-card h3 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .loading-card p { font-size: 14px; color: var(--muted); }
+
+    .loading-steps {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 28px;
+      flex-wrap: wrap;
+    }
+
+    .loading-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      opacity: 0.4;
+      transition: opacity 0.3s;
+    }
+
+    .loading-step.active { opacity: 1; color: var(--accent); }
+    .loading-step.done { opacity: 0.7; color: var(--text); }
+
+    .step-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    .results-card {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .results-card.show { display: block; }
+
+    .results-header {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .score-badge {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .score-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 2px;
+    }
+
+    .results-meta { font-size: 13px; color: var(--muted); text-align: right; }
+    .results-body { padding: 28px; }
+
+    .corrections-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .correction-item {
+      display: flex;
+      gap: 14px;
+      padding: 16px 18px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      animation: slideIn 0.3s ease forwards;
+      opacity: 0;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .correction-item.error   { background: rgba(255,107,53,0.06); border-color: rgba(255,107,53,0.2); }
+    .correction-item.warning { background: rgba(255,193,7,0.06);  border-color: rgba(255,193,7,0.2); }
+    .correction-item.good    { background: rgba(0,229,160,0.06);  border-color: rgba(0,229,160,0.2); }
+
+    .correction-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .correction-item.error .correction-dot   { background: var(--warn); }
+    .correction-item.warning .correction-dot { background: #ffc107; }
+    .correction-item.good .correction-dot    { background: var(--accent); }
+
+    .correction-text { flex: 1; }
+    .correction-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+    .correction-detail { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+    .great-form { text-align: center; padding: 32px; }
+
+    .great-form-icon {
+      width: 64px; height: 64px;
+      margin: 0 auto 16px;
+      background: rgba(0,229,160,0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .great-form-icon svg { width: 32px; height: 32px; color: var(--accent); }
+
+    .great-form h3 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .great-form p { font-size: 14px; color: var(--muted); }
+
+    .again-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 13px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+
+    .again-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .again-btn svg { width: 16px; height: 16px; }
+
+    .error-card {
+      display: none;
+      background: rgba(255,107,53,0.06);
+      border: 1px solid rgba(255,107,53,0.25);
+      border-radius: 16px;
+      padding: 28px;
+      text-align: center;
+    }
+
+    .error-card.show { display: block; }
+
+    .error-card h3 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--warn);
+      margin-bottom: 8px;
+    }
+
+    .error-card p { font-size: 14px; color: var(--muted); }
+
+    .tips-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 28px;
+    }
+
+    .tips-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .tips-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+
+    .tip-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .tip-item::before {
+      content: '';
+      width: 5px; height: 5px;
+      background: var(--accent);
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 600px) {
+      nav { padding: 16px 20px; }
+      .hero { padding: 120px 20px 40px; }
+      .main { padding: 0 20px 60px; }
+      .exercise-grid { grid-template-columns: repeat(3, 1fr); }
+      .loading-steps { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="index.html" class="nav-logo">MoGym</a>
+    <a href="index.html" class="nav-back">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+      Back to dashboard
+    </a>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-tag">
+      <span></span>
+      AI-Powered
+    </div>
+    <h1>Fix Your<br><em>Form.</em></h1>
+    <p>Upload a video of your exercise and our AI will analyse your posture, detect errors, and give you precise corrections.</p>
+  </div>
+
+  <div class="main">
+
+    <!-- UPLOAD CARD -->
+    <div class="upload-card" id="uploadCard">
+      <div class="card-header">
+        <div class="card-header-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+          </svg>
+        </div>
+        <div>
+          <h2>Upload your video</h2>
+          <p>Select your exercise and upload a clip to get started</p>
+        </div>
+      </div>
+
+      <div class="card-body">
+
+        <div class="exercise-grid" id="exerciseGrid">
+  <button class="exercise-btn active" data-exercise="bicep_curl">Bicep Curl</button>
+  <button class="exercise-btn" data-exercise="tricep_pushdown">Tricep Pushdown</button>
+  <button class="exercise-btn" data-exercise="bench_press">Bench Press</button>
+  <button class="exercise-btn" data-exercise="shoulder_press">Shoulder Press</button>
+</div>
+
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="videoInput" accept="video/*"/>
+          <div class="drop-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+            </svg>
+          </div>
+          <h3>Drop your video here</h3>
+          <p>or click to browse your files</p>
+          <div class="file-types">
+            <span class="file-type-tag">MP4</span>
+            <span class="file-type-tag">MOV</span>
+            <span class="file-type-tag">AVI</span>
+            <span class="file-type-tag">WEBM</span>
+          </div>
+        </div>
+
+        <div class="file-selected" id="fileSelected">
+          <div class="file-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+            </svg>
+          </div>
+          <div class="file-info">
+            <div class="file-name" id="fileName">video.mp4</div>
+            <div class="file-size" id="fileSize">0 MB</div>
+          </div>
+          <button class="remove-file" onclick="removeFile()" title="Remove file">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <button class="analyze-btn" id="analyzeBtn" onclick="analyzeForm()" disabled>
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2"/>
+          </svg>
+          Analyse My Form
+        </button>
+
+      </div>
+    </div>
+
+    <!-- LOADING -->
+    <div class="loading-card" id="loadingCard">
+      <div class="loading-spinner"></div>
+      <h3>Analysing your form</h3>
+      <p>This may take a moment depending on video length</p>
+      <div class="loading-steps">
+        <div class="loading-step" id="step1"><div class="step-dot"></div> Uploading video</div>
+        <div class="loading-step" id="step2"><div class="step-dot"></div> Extracting poses</div>
+        <div class="loading-step" id="step3"><div class="step-dot"></div> Detecting errors</div>
+        <div class="loading-step" id="step4"><div class="step-dot"></div> Generating report</div>
+      </div>
+    </div>
+
+    <!-- ERROR -->
+    <div class="error-card" id="errorCard">
+      <h3>Something went wrong</h3>
+      <p id="errorMsg">Could not connect to the analysis server. Make sure your Flask server is running on port 5000.</p>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="results-card" id="resultsCard">
+      <div class="results-header">
+        <div>
+          <div class="score-badge" id="scoreDisplay">—</div>
+          <div class="score-label">Form Score</div>
+        </div>
+        <div class="results-meta" id="resultsMeta"></div>
+      </div>
+      <div class="results-body" id="resultsBody"></div>
+    </div>
+
+    <!-- TIPS -->
+    <div class="tips-card">
+      <div class="tips-title">Tips for best results</div>
+      <div class="tips-grid">
+        <div class="tip-item">Film from the side for most exercises</div>
+        <div class="tip-item">Make sure your full body is visible in frame</div>
+        <div class="tip-item">Good lighting helps pose detection accuracy</div>
+        <div class="tip-item">Keep the camera steady while recording</div>
+        <div class="tip-item">10–30 second clips work best</div>
+        <div class="tip-item">Wear fitted clothing for clearer landmark detection</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let selectedExercise = 'bicep_curl';
+    let selectedFile = null;
+
+    document.querySelectorAll('.exercise-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.exercise-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedExercise = btn.dataset.exercise;
+      });
+    });
+
+    const dropZone = document.getElementById('dropZone');
+
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('video/')) setFile(file);
+    });
+
+    document.getElementById('videoInput').addEventListener('change', e => {
+      if (e.target.files[0]) setFile(e.target.files[0]);
+    });
+
+    function setFile(file) {
+      selectedFile = file;
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+      document.getElementById('fileSelected').classList.add('show');
+      document.getElementById('analyzeBtn').disabled = false;
+    }
+
+    function removeFile() {
+      selectedFile = null;
+      document.getElementById('videoInput').value = '';
+      document.getElementById('fileSelected').classList.remove('show');
+      document.getElementById('analyzeBtn').disabled = true;
+    }
+
+    function animateSteps() {
+      const steps = ['step1', 'step2', 'step3', 'step4'];
+      let i = 0;
+      document.getElementById(steps[0]).classList.add('active');
+      return setInterval(() => {
+        if (i > 0) document.getElementById(steps[i-1]).classList.replace('active', 'done');
+        if (i < steps.length) { document.getElementById(steps[i]).classList.add('active'); i++; }
+      }, 1800);
+    }
+
+    async function analyzeForm() {
+      if (!selectedFile) return;
+
+      hide('resultsCard');
+      hide('errorCard');
+      show('loadingCard');
+      document.getElementById('analyzeBtn').disabled = true;
+
+      ['step1','step2','step3','step4'].forEach(id => {
+        document.getElementById(id).classList.remove('active', 'done');
+      });
+
+      const stepInterval = animateSteps();
+
+      try {
+        const formData = new FormData();
+        formData.append('video', selectedFile);
+        formData.append('exercise', selectedExercise);
+
+        const response = await fetch('http://localhost:5000/analyze', {
+          method: 'POST',
+          body: formData
+        });
+
+        clearInterval(stepInterval);
+        if (!response.ok) throw new Error('Server error: ' + response.status);
+
+        const data = await response.json();
+        hide('loadingCard');
+        showResults(data);
+
+      } catch (err) {
+        clearInterval(stepInterval);
+        hide('loadingCard');
+        document.getElementById('errorMsg').textContent = err.message.includes('fetch')
+          ? 'Could not connect to the server. Make sure your Flask backend is running on port 5000.'
+          : err.message;
+        show('errorCard');
+        document.getElementById('analyzeBtn').disabled = false;
+      }
+    }
+
+    function showResults(data) {
+      const corrections = data.corrections || [];
+      const framesAnalysed = data.total_frames_analyzed || '—';
+      const score = data.score;
+
+      document.getElementById('scoreDisplay').textContent = score + '%';
+      document.getElementById('resultsMeta').innerHTML =
+        'Exercise: <strong style="color:var(--text)">' + selectedExercise.replace('_',' ') + '</strong><br>' +
+        'Frames analysed: <strong style="color:var(--text)">' + framesAnalysed + '</strong>';
+
+      const body = document.getElementById('resultsBody');
+      const isGood = corrections.length === 0 || (corrections.length === 1 && corrections[0].toLowerCase().includes('great'));
+
+      if (isGood) {
+        body.innerHTML = `
+          <div class="great-form">
+            <div class="great-form-icon">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <h3>Perfect Form!</h3>
+            <p>No corrections needed. Keep up the great work.</p>
+          </div>
+          ${againBtn()}`;
+      } else {
+        const items = corrections.map((c, i) => {
+          const type = i === 0 ? 'error' : i < 3 ? 'warning' : 'good';
+          const label = type === 'error' ? 'Needs correction' : type === 'warning' ? 'Minor adjustment' : 'Tip';
+          const text = typeof c === 'object' ? (c.message || c.label || JSON.stringify(c)) : c;
+          return `<div class="correction-item ${type}" style="animation-delay:${i * 0.08}s">
+            <div class="correction-dot"></div>
+            <div class="correction-text">
+              <div class="correction-title">${label}</div>
+              <div class="correction-detail">${text}</div>
+            </div>
+          </div>`;
+        }).join('');
+
+        body.innerHTML = `<div class="corrections-list">${items}</div>${againBtn()}`;
+      }
+
+      show('resultsCard');
+      document.getElementById('resultsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function againBtn() {
+      return `<button class="again-btn" onclick="resetForm()">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Analyse another video
+      </button>`;
+    }
+
+    function resetForm() {
+      removeFile();
+      hide('resultsCard');
+      hide('errorCard');
+      document.getElementById('uploadCard').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function show(id) { document.getElementById(id).classList.add('show'); }
+    function hide(id) { document.getElementById(id).classList.remove('show'); }
+  </script>
+
+</body>
+</html>
